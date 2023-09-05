@@ -296,7 +296,7 @@ func (s *Set) PrintUsage(w io.Writer) {
 	if s.parameters != "" {
 		flags += " " + s.parameters
 	}
-	fmt.Fprintf(w, "Usage: %s%s\n", s.program, flags)
+	fmt.Fprintf(w, "%s\n\nUsage: %s%s\n", s.description, s.program, flags)
 	s.PrintOptions(w)
 }
 
@@ -469,14 +469,15 @@ Parsing:
 				return unknownOption(arg[2:])
 			}
 			opt.isLong = true
-			// If we require an option and did not have an =
-			// then use the next argument as an option.
-			if !opt.flag && e < 0 && !opt.optional {
-				if len(args) == 0 {
+			// If we require a value and did not have an "=" then use the next argument as this option's value.
+			// AST: Fixed the fact that optional options would NEVER look for a value unless there is an equals
+			if !opt.flag && e < 0 {
+				if !opt.optional && len(args) == 0 {
 					return missingArg(opt)
+				} else if len(args) > 0 {
+					value = args[0]
+					args = args[1:]
 				}
-				value = args[0]
-				args = args[1:]
 			}
 			opt.count++
 
@@ -511,12 +512,14 @@ Parsing:
 			var value string
 			if !opt.flag {
 				value = arg[1+i:]
-				if value == "" && !opt.optional {
-					if len(args) == 0 {
+				// AST: Fixed the fact that optional options would NEVER look for a value in the next argument slot
+				if value == "" {
+					if !opt.optional && len(args) == 0 {
 						return missingArg(opt)
+					} else if len(args) > 0 {
+						value = args[0]
+						args = args[1:]
 					}
-					value = args[0]
-					args = args[1:]
 				}
 			}
 			if err := opt.value.Set(value, opt); err != nil {

@@ -35,6 +35,9 @@ type Set struct {
 	// first argument passed to parse.
 	program string
 
+	// description is an option piece of text displayed at the top of the usage
+	description string
+
 	// parameters is what is displayed on the usage line after displaying
 	// the various options.
 	parameters string
@@ -138,6 +141,16 @@ func SetProgram(program string) {
 // from the zeroth argument passed to Getopt or Parse.
 func (s *Set) SetProgram(program string) {
 	s.program = program
+}
+
+// SetProgram sets the description to desc, to print in the default usage.
+func SetDescription(desc string) {
+	CommandLine.description = desc
+}
+
+// SetProgram sets s's description to desc, to print in the default usage.
+func (s *Set) SetDescription(desc string) {
+	s.description = desc
 }
 
 // SetUsage sets the function used by Parse to display the commands usage
