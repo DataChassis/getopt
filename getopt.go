@@ -429,6 +429,7 @@ func (s *Set) Getopt(args []string, fn func(Option) bool) (err error) {
 	args = args[1:]
 Parsing:
 	for len(args) > 0 {
+		// AST: "arg" is the current argument which we pop off the front of the slice
 		arg := args[0]
 		s.args = args
 		args = args[1:]
@@ -439,12 +440,13 @@ Parsing:
 			return nil
 		}
 
-		if arg == "-" {
-			goto ShortParsing
-		}
+		// AST: apparently a single dash could be an option in the original getopt C code, but I think allowing that is pants
+		// if arg == "-" {
+		// 	goto ShortParsing
+		// }
 
-		// explicitly request end of options?
-		if arg == "--" {
+		// explicitly request end of options? AST: added a single dash to this
+		if arg == "--" || arg == "-" {
 			s.args = args
 			s.State = DashDash
 			return nil
@@ -462,9 +464,12 @@ Parsing:
 			// If we are processing long options then --f is -f
 			// if f is not defined as a long option.
 			// This lets you say --f=false
-			if opt == nil && len(arg[2:]) == 1 {
-				opt = s.shortOptions[rune(arg[2])]
-			}
+
+			// AST: I disagree with the above and have removed this, - and -- should be specific
+			// if opt == nil && len(arg[2:]) == 1 {
+			// 	opt = s.shortOptions[rune(arg[2])]
+			// }
+
 			if opt == nil {
 				return unknownOption(arg[2:])
 			}
@@ -472,7 +477,8 @@ Parsing:
 			// If we require a value and did not have an "=" then use the next argument as this option's value.
 			// AST: Fixed the fact that optional options would NEVER look for a value unless there is an equals
 			if !opt.flag && e < 0 {
-				if !opt.optional && len(args) == 0 {
+				// if the value is mandatory, and missing, or is another option (starts with a dash)
+				if !opt.optional && (len(args) == 0 || args[0][0] == '-') {
 					return missingArg(opt)
 				} else if len(args) > 0 {
 					value = args[0]
@@ -494,7 +500,7 @@ Parsing:
 
 		// Short option processing
 		arg = arg[1:] // strip -
-	ShortParsing:
+		// ShortParsing:
 		for i, c := range arg {
 			opt := s.shortOptions[c]
 			if opt == nil {
@@ -514,7 +520,8 @@ Parsing:
 				value = arg[1+i:]
 				// AST: Fixed the fact that optional options would NEVER look for a value in the next argument slot
 				if value == "" {
-					if !opt.optional && len(args) == 0 {
+					// if the value is mandatory, and missing, or is another option (starts with a dash)
+					if !opt.optional && (len(args) == 0 || args[0][0] == '-') {
 						return missingArg(opt)
 					} else if len(args) > 0 {
 						value = args[0]
