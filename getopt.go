@@ -478,9 +478,10 @@ Parsing:
 			// AST: Fixed the fact that optional options would NEVER look for a value unless there is an equals
 			if !opt.flag && e < 0 {
 				// if the value is mandatory, and missing, or is another option (starts with a dash)
-				if !opt.optional && (len(args) == 0 || args[0][0] == '-') {
+				haveValue := len(args) > 0 && args[0][0] != '-'
+				if !opt.optional && !haveValue {
 					return missingArg(opt)
-				} else if len(args) > 0 {
+				} else if haveValue {
 					value = args[0]
 					args = args[1:]
 				}
@@ -521,9 +522,10 @@ Parsing:
 				// AST: Fixed the fact that optional options would NEVER look for a value in the next argument slot
 				if value == "" {
 					// if the value is mandatory, and missing, or is another option (starts with a dash)
-					if !opt.optional && (len(args) == 0 || args[0][0] == '-') {
+					haveValue := len(args) > 0 && args[0][0] != '-'
+					if !opt.optional && !haveValue {
 						return missingArg(opt)
-					} else if len(args) > 0 {
+					} else if haveValue {
 						value = args[0]
 						args = args[1:]
 					}
